@@ -1,4 +1,29 @@
-plugins {
-  id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+pluginManagement {
+  repositories {
+    mavenLocal()
+
+    maven {
+      credentials {
+        username "$rbArtifactoryUser"
+        password "$rbArtifactoryPassword"
+      }
+      url "https://rb-artifactory.bosch.com/artifactory/maven-central-remote/"
+    }
+
+    maven {
+      credentials {
+        username "$rbArtifactoryUser"
+        password "$rbArtifactoryPassword"
+      }
+      authentication {
+        basic(BasicAuthentication)
+      }
+      url = "https://rb-artifactory.bosch.com/artifactory/bhp-eat-spexjava-local/"
+    }
+  }
+  plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+  }
 }
+
 rootProject.name = 'advent-of-kotlin-2016'
