@@ -13,13 +13,13 @@ class Day5 {
     val result2 = part1("ugkcyxxp")
     println("result2 = $result2")
 
-//    val result3 = part2(data1)
-//    println("result3 = $result3")
-//
-//    check(result3 == 1) { "expected 1 but got $result3" }
-//
-//    val result4 = part2(data2)
-//    println("result4 = $result4")
+    val result3 = part2("abc")
+    println("result3 = $result3")
+
+    check(result3 == "05ace8e3") { "expected 05ace8e3 but got $result3" }
+
+    val result4 = part2("ugkcyxxp")
+    println("result4 = $result4")
   }
 
   private fun part1(input: String): String {
@@ -50,8 +50,35 @@ class Day5 {
     return code
   }
 
-  private fun part2(lines: List<String>): Int {
-    return 5
+  private fun part2(input: String): String {
+    val code = "........".toCharArray()
+    var counter = 0
+    val md = MessageDigest.getInstance("MD5")
+
+    while(String(code).contains(".")) {
+      while (true) {
+        val testString = "$input$counter"
+        md.reset()
+        val digest = md.digest(testString.toByteArray())
+        counter++
+
+        // Check for "00000" prefix directly on bytes (faster)
+        if (digest[0] == 0.toByte() &&
+          digest[1] == 0.toByte() &&
+          (digest[2].toInt() and 0xF0) == 0) {
+
+          // Convert only the 6th character to hex
+          val position = digest[2].toInt() and 0x0F
+          val char = ((digest[3].toInt() and 0xF0) shr 4).toString(16)[0]
+          if(position in 0..7 && code[position]=='.') {
+            code[position]= char
+            println(code)
+          }
+          break
+        }
+      }
+    }
+    return String(code)
   }
 
 }
