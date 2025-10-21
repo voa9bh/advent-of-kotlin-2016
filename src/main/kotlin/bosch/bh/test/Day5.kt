@@ -1,8 +1,6 @@
 package bosch.bh.test
 
 import java.security.MessageDigest
-import kotlin.collections.get
-import kotlin.text.toInt
 
 class Day5 {
   fun start() {
