@@ -1,6 +1,9 @@
 package bosch.bh.test
 
 import java.io.File
+import kotlin.collections.get
+import kotlin.text.clear
+import kotlin.times
 
 class Day10 {
   open class Bot(val id: Int, val chips: MutableList<Int> = mutableListOf()) {
@@ -35,21 +38,39 @@ class Day10 {
   fun start() {
     println("Start ${System.getProperty("user.dir")}")
     val data1 = File("src/main/resources/day10_1.txt").readLines()
-    val result1 = part1(data1, Pair(5,2))
+    val result1 = part1(data1) { bots, _ ->
+      checkEndCriteria(bots, Pair(2, 5))
+    }
     println("result1 = $result1")
     check(result1 == 2) { "expected 2 but got $result1" }
 
     val data2 = File("src/main/resources/day10_2.txt").readLines()
-    val result2 = part1(data2, Pair(61,17))
+    val result2 = part1(data2) { bots, _ ->
+      checkEndCriteria(bots, Pair(17, 61))
+    }
     println("result2 = $result2")
+
+    // Part 2: Check if outputs 0, 1, 2 have chips
+    val result3 = part1(data2) { _, outputs ->
+      val output0 = outputs.find { it.id == 0 }
+      val output1 = outputs.find { it.id == 1 }
+      val output2 = outputs.find { it.id == 2 }
+
+      if(output0?.chips?.isNotEmpty() == true &&
+        output1?.chips?.isNotEmpty() == true &&
+        output2?.chips?.isNotEmpty() == true) {
+        output0.chips[0] * output1.chips[0] * output2.chips[0]
+      } else {
+        -1
+      }
+    }
+    println("result3 = $result3")
   }
 
-  private fun part1(lines: List<String>, endCriteria:Pair<Int,Int>): Int {
+  private fun part1(lines: List<String>, maxLoops: Int = 10_000_000, endCriteria: (Map<Int, Bot>, List<Output>) -> Int): Int {
     val bots = mutableMapOf<Int, Bot>()
-    val outputs = mutableListOf<Output>()
+    val outputs = mutableMapOf<Int, Output>()
     val instructions = mutableListOf<Instruction>()
-
-    val sortedEndCriteria = if(endCriteria.first < endCriteria.second) endCriteria else Pair(endCriteria.second, endCriteria.first)
 
     // Parse input
     lines.forEach { line ->
@@ -70,37 +91,29 @@ class Day10 {
         val lowBot = if (lowType == "bot") {
           bots.getOrPut(lowId) { Bot(lowId) }
         } else {
-          val output = Output(lowId)
-          outputs.add(output)
-          output
+          outputs.getOrPut(lowId) { Output(lowId) }
         }
         val highBot = if (highType == "bot") {
           bots.getOrPut(highId) { Bot(highId) }
         } else {
-          val output = Output(highId)
-          outputs.add(output)
-          output
+          outputs.getOrPut(highId) { Output(highId) }
         }
         instructions.add(BotGivesTo(bot, lowBot, highBot))
       }
     }
 
-    println(instructions.joinToString("\n"))
-
+    // Initialize chips
     for(instruction in instructions) {
       if(instruction is ValueGoesToBot) {
         instruction.bot.chips.add(instruction.value)
       }
     }
 
-    repeat(10_000_000) {
-      for(bot in bots) {
-        println("Bot ${bot.key} has chips ${bot.value.chips}")
-      }
-
-      if(checkEndCriteria(bots, sortedEndCriteria) != -1) {
-        println("End criteria met.")
-        return checkEndCriteria(bots, sortedEndCriteria)
+    // Run simulation
+    repeat(maxLoops) {
+      val result = endCriteria(bots, outputs.values.toList())
+      if(result != -1) {
+        return result
       }
 
       for(instruction in instructions) {
@@ -112,7 +125,6 @@ class Day10 {
             instruction.lowToBot.addChip(low)
             instruction.highToBot.addChip(high)
             bot.chips.clear()
-
             break
           }
         }
@@ -122,14 +134,15 @@ class Day10 {
     return -1
   }
 
+
   private fun checkEndCriteria(
-    bots: MutableMap<Int, Bot>,
+    bots: Map<Int, Bot>,
     endCriteria: Pair<Int, Int>
   ): Int {
     for (bot in bots.values) {
       if (bot.chips.size == 2) {
-        val low = bot.chips.minOrNull()!!
-        val high = bot.chips.maxOrNull()!!
+        val low = bot.chips.minOrNull()
+        val high = bot.chips.maxOrNull()
         if (low == endCriteria.first && high == endCriteria.second) {
           println("Bot ${bot.id} is comparing $low and $high")
           return bot.id
